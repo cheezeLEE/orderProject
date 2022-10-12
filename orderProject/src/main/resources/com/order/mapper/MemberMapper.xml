@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTO Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.order.mapper.MemberMapper">
+	<resultMap type="com.order.domain.MemberVO" id="memberMap">
+		<id property="userid" column="userid" />
+		<result property="userid" column="userid" />
+		<result property="userpw" column="userpw" />
+		<result property="userName" column="username" />
+		<result property="userEmail" column="useremail" />
+		<result property="userTel" column="usertel" />
+		<result property="addr1" column="addr1" />
+		<result property="addr2" column="addr2" />
+		<result property="addr3" column="addr3" />
+		<result property="regDate" column="regdate" />
+		<result property="updateDate" column = "updatedate" />
+		<result property="deletedYn" column = "deleted_yn" />
+		<collection property="authList" resultMap="authMap"></collection>
+	</resultMap>
+	
+	<resultMap type="com.order.domain.AuthVO" id="authMap">
+		<result property="userid" column="userid" />
+		<result property="auth" column="auth" />
+	</resultMap>
+	
+	<select id="read" resultMap="memberMap">
+		SELECT mem.userid, userpw, username, enabled, regdate, updatedate, auth
+		FROM f_user mem LEFT OUTER JOIN f_auth auth on mem.userid = auth.userid
+		WHERE mem.userid = #{userid}
+	</select>
+	
+	<insert id="join" parameterType="com.order.domain.MemberVO">
+		INSERT INTO f_user(userid, username, userpw, usertel, useremail, addr1, addr2, addr3) 
+		VALUES(#{userid}, #{userName}, #{userpw}, #{userTel}, #{userEmail}, #{addr1}, #{addr2}, #{addr3})
+	</insert>
+	
+	<insert id="auth" parameterType="string">
+		INSERT INTO f_auth(userid, auth)
+		VALUES(#{userid}, 'ROLE_MEMBER')
+	</insert>
+	
+	<select id="idCheck" resultType="int">
+		SELECT COUNT(1) 
+		FROM f_user 
+		WHERE userid = #{userid}
+	</select>
+	
+	<select id="searchId" resultType="string">
+		SELECT userid
+		FROM f_user
+		WHERE username = #{userName}
+			AND userEmail = #{userEmail}
+	</select>
+	
+	<select id="searchPw" resultType="int">
+		SELECT COUNT(1)
+		FROM f_user
+		WHERE userid = #{userid}
+			AND username = #{userName}
+			AND useremail = #{userEmail}
+	</select>
+	
+	<update id="changeSearchPw">
+		UPDATE f_user
+		SET userpw = #{userpw}
+		WHERE userid = #{userid}
+	</update>
+	
+	<select id="checkPw" resultType="string">
+		SELECT userpw
+		FROM f_user
+		WHERE userid = #{userid}
+	</select>
+	
+	<select id="userInfo" resultType="com.order.domain.MemberVO">
+		SELECT * 
+		FROM f_user
+		WHERE userid = #{userid}
+	</select>
+	
+	<update id="updateInfo" parameterType="com.order.domain.MemberVO">
+		UPDATE f_user
+		SET userpw = #{userpw}, addr1 = #{addr1}, addr2 = #{addr2}, addr3 = #{addr3}, userEmail = #{userEmail}, userTel = #{userTel}
+		WHERE userid = #{userid}
+	</update>
+</mapper>

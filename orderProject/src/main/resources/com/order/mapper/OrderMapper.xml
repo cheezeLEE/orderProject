@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTO Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.order.mapper.OrderMapper">
+	<resultMap type="com.order.domain.ProductVO" id="productMap">
+		<id property="productid" column="productid" />
+		<result property="productId" column="productId" />
+		<result property="productName" column="productName" />
+		<result property="price" column="price" />
+		<result property="stock" column="stock" />
+		<result property="productInfo" column="productInfo" />
+		<result property="regDate" column="regDate" />
+		<result property="updateDate" column="updateDate" />
+		<result property="deletedYn" column="deletedYn" />
+		<result property="image" column="image" />
+		<result property="category" column = "category" />
+	</resultMap>
+		
+	<insert id="createProduct" parameterType="com.order.domain.ProductVO">
+		INSERT INTO f_product (productId, productName, price, stock, productInfo, image, category)
+		VALUES (SEQ_PRODUCT.NEXTVAL, #{productName}, #{price}, #{stock}, #{productInfo}, #{image}, #{category})
+	</insert>
+	
+<!-- 	<select id="productList" resultType="com.order.domain.ProductVO">
+		SELECT * 
+		FROM f_product
+		WHERE delete_yn = 'N'
+		ORDER BY productId DESC
+	</select> -->
+	
+ 	<select id="productList" resultType="com.order.domain.ProductVO">
+		SELECT *
+		FROM (
+			SELECT ROWNUM RN, A.*
+			FROM (
+				SELECT *
+				FROM f_product
+				WHERE delete_yn = 'N'
+					AND stock > 0
+				<if test="searchCategory != null and searchCategory != ''">
+					AND category LIKE CONCAT('%', CONCAT(#{searchCategory},'%'))
+				</if>			
+				<if test="searchProductName != null and searchProductName != ''">
+					AND productName LIKE CONCAT('%', CONCAT(#{searchProductName},'%'))
+				</if>			
+				<if test="searchStartPrice != null and searchEndPrice != null and searchStartPrice != '' and searchStartPrice != ''">
+					AND price BETWEEN #{searchStartPrice} AND #{searchEndPrice} 
+				</if>			
+				ORDER BY productId
+			) A
+		)
+		WHERE (RN BETWEEN #{start} AND #{end})
+	</select>
+	
+	<select id="productDetail" resultType="com.order.domain.ProductVO">
+		SELECT *
+		FROM f_product
+		WHERE productId = #{productId}
+	</select>
+	
+	<update id="updateProduct" parameterType="com.order.domain.ProductVO">
+		UPDATE f_product
+		SET productName = #{productName}, price = #{price}, stock = #{stock}, productInfo = #{productInfo}, image = #{image}, category = #{category}, updatedate = SYSDATE
+		WHERE productId = #{productId}
+	</update>
+	
+	<update id="deleteProduct">
+		UPDATE f_product
+		SET delete_yn = 'Y'
+		WHERE productId = #{productId}
+	</update>
+	
+	<select id="countProduct" resultType="int">
+		SELECT COUNT(*) 
+		FROM f_product
+		WHERE delete_yn = 'N'
+		<if test="searchCategory != null and searchCategory != ''">
+			AND category = #{searchCategory}
+		</if>			
+		<if test="searchProductName != null and searchProductName != ''">
+			AND productName LIKE CONCAT('%', CONCAT(#{searchProductName},'%'))
+		</if>			
+		<if test="searchStartPrice != null and searchEndPrice != null and searchStartPrice != '' and searchStartPrice != ''">
+			AND price BETWEEN #{searchStartPrice} AND #{searchEndPrice} 
+		</if>					
+	</select>
+	<insert id="orderProduct" parameterType="com.order.domain.OrderVO">
+		INSERT INTO f_order(orderId, productId, userId, orderName, orderTel, orderAddr1, orderAddr2, orderAddr3, count)
+		VALUES(SEQ_ORDER.NEXTVAL, #{productId}, #{userId}, #{orderName}, #{orderTel}, #{orderAddr1}, #{orderAddr2}, #{orderAddr3}, #{count})
+		
+		<selectKey keyProperty="orderId" resultType="string" order="AFTER">
+			SELECT SEQ_ORDER.CURRVAL FROM DUAL
+		</selectKey>
+	</insert>
+	
+	<update id="changeStock" parameterType="com.order.domain.OrderVO">
+		UPDATE f_product
+		SET stock = (
+			SELECT a.stock - b.COUNT 
+			FROM f_order b, f_product a
+			WHERE b.orderId = #{orderId}
+				AND a.productId = b.productId
+				AND a.stock - b.COUNT >= 0
+		) 
+		WHERE PRODUCTID = #{productId}
+	</update>
+	
+	<select id="orderList" resultType="com.order.domain.OrderProductVO">
+		SELECT fo.orderId, fp.PRODUCTNAME, fp.PRICE, fo.COUNT, (fo.COUNT * fp.PRICE) as totalPrice, fo.ORDERDATE, fo.DELIVERSTATUS
+		FROM f_order fo, F_PRODUCT fp 
+		WHERE
+			fo.PRODUCTID = fp.PRODUCTID 
+			AND userid = #{userid}
+	</select>
+	
+	<select id="orderCount" resultType="int">
+		SELECT COUNT(1)
+		FROM f_order fo, F_PRODUCT fp 
+		WHERE
+			fo.PRODUCTID = fp.PRODUCTID 
+			AND userid = #{userid}
+	</select>
+	
+	<update id="deleteOrder">
+		UPDATE f_order
+		SET deliverStatus = '주문취소'
+		WHERE orderId = #{orderId}
+	</update>
+</mapper>

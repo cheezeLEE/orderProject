@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+
+<bean id="customLoginSuccess" class="com.order.security.CustomLoginSuccessHandler" />
+<!-- <bean id="customPasswordEncoder" class="com.order.security.CurstomNoOpPasswordEncoder"></bean> -->
+<bean id="bcryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" />
+<bean id="customUserDetailsService" class="com.order.security.CustomUserDetailsService" />
+
+<!-- security 시작지점 -->
+<security:http>
+<!-- 해당 패턴에 대해 권한을 줌 -->
+	<!-- 로그인 하지 않은 사용자도 접근 가능 -->
+	<security:intercept-url pattern="/login" access="isAnonymous()"/>
+	<security:intercept-url pattern="/join" access="isAnonymous()"/>
+	<security:intercept-url pattern="/mailCheck" access="permitAll()"/>
+	<security:intercept-url pattern="/idCheck" access="isAnonymous()"/>	
+	<security:intercept-url pattern="/searchId" access="isAnonymous()"/>
+	<security:intercept-url pattern="/resultId" access="isAnonymous()"/>
+	<security:intercept-url pattern="/searchPw" access="isAnonymous()"/>
+	<security:intercept-url pattern="/resultPw" access="isAnonymous()"/>
+	
+	<!-- 로그인 한 사용자(member, admin)만 접근 가능 -->
+	<security:intercept-url pattern="/productList" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')"/>
+	<security:intercept-url pattern="/createProduct" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')"/>
+	<security:intercept-url pattern="/uploadImage" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')"/>
+	<security:intercept-url pattern="/updateProduct" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')"/>
+	<security:intercept-url pattern="/productOrder" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')"/>
+	<security:intercept-url pattern="/deleteProduct" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')"/>
+	<security:intercept-url pattern="/modCheck" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')"/>
+	<security:intercept-url pattern="/modjoin" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')"/>
+	<security:intercept-url pattern="/deleteOrder" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')"/>
+
+	<!-- 로그인 한 사용자 중 admin 권한을 가진  사용자만 접근 가능 -->
+	<security:intercept-url pattern="/admin" access="hasRole('ROLE_ADMIN')"/>	
+	
+	<!-- 테스트 페이지 -->
+	<security:intercept-url pattern="/test" access="isAnonymous()"/>
+	<security:intercept-url pattern="/testUpload" access="isAnonymous()"/>
+	<security:intercept-url pattern="/testCreate" access="isAnonymous()"/>
+<!-- 	<security:intercept-url pattern="/uploadImage" access="isAnonymous()"/> -->
+ 	<security:form-login login-page="/login" authentication-success-handler-ref="customLoginSuccess"/>
+ 	<security:logout logout-url="/logout" invalidate-session="true"/>
+</security:http>
+
+<!-- spring security 동작을 위해 필요 -->
+<!-- AuthenticationManager > ProviderManager <-> AuthenticationProvider <-> UserDetailsService(인증, 권한처리) -->
+<security:authentication-manager>
+	<security:authentication-provider user-service-ref="customUserDetailsService">
+<!--  		<security:jdbc-user-service data-source-ref="dataSource" 
+			users-by-username-query="SELECT userid, userpw, enabled FROM f_user WHERE userid = ?" 
+			authorities-by-username-query="SELECT userid, auth FROM f_auth WHERE userid = ?"/>
+ -->
+ 		<security:password-encoder ref="bcryptPasswordEncoder"/>
+	</security:authentication-provider>
+</security:authentication-manager>
+
+<context:component-scan base-package="com.order.security" />
+
+</beans>
